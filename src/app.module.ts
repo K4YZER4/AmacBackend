@@ -1,12 +1,8 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { AdoptionModule } from './adoption/adoption.module';
-import { AdoptionModule } from './modules/adoption/adoption.module';
-import { NewsModule } from './modules/news/news.module';
-import { NewsModule } from './news/news.module';
-import { AdoptionModule } from './adoption/adoption.module';
-
+import { AppController } from './app.controller.js';
+import { AppService } from './app.service.js';
+import { AdoptionModule } from './modules/adoption/adoption.module.js';
+import { NewsModule } from './modules/news/news.module.js';
 @Module({
   imports: [AdoptionModule, NewsModule],
   controllers: [AppController],
