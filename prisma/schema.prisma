@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                BigInt   @id @default(autoincrement())
+  fullName          String   @map("full_name") @db.VarChar(120)
+  email             String   @unique @map("email") @db.VarChar(150)
+  passwordHash      String   @map("password_hash")
+  role              String   @default("admin") @map("role") @db.VarChar(20)
+  isActive          Boolean  @default(true) @map("is_active")
+  lastLoginAt       DateTime? @map("last_login_at")
+  passwordChangedAt DateTime? @map("password_changed_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  adminSessions  AdminSession[]
+  createdAnimals Animal[]      @relation("CreatedBy")
+  updatedAnimals Animal[]      @relation("UpdatedBy")
+  createdNews    News[]        @relation("NewsCreatedBy")
+  updatedNews    News[]        @relation("NewsUpdatedBy")
+
+  @@map("users")
+}
+
+model AdminSession {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    BigInt    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  userAgent String?   @map("user_agent")
+  ipAddress String?   @map("ip_address") @db.Inet
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admin_sessions")
+}
+
+model Animal {
+  id           BigInt    @id @default(autoincrement())
+  name         String    @db.VarChar(100)
+  species      String    @db.VarChar(20)
+  breed        String?   @db.VarChar(120)
+  sex          String    @default("unknown") @db.VarChar(20)
+  ageMonths    Int?      @map("age_months")
+  size         String?   @db.VarChar(20)
+  color        String?   @db.VarChar(80)
+  weightKg     Decimal?  @map("weight_kg") @db.Decimal(5, 2)
+  description  String?
+  healthNotes  String?   @map("health_notes")
+  intakeDate   DateTime? @map("intake_date") @db.Date
+  isVaccinated Boolean   @default(false) @map("is_vaccinated")
+  isNeutered   Boolean   @default(false) @map("is_neutered")
+  isDewormed   Boolean   @default(false) @map("is_dewormed")
+  status       String    @default("available") @db.VarChar(20)
+  published    Boolean   @default(true)
+  createdBy    BigInt?   @map("created_by")
+  updatedBy    BigInt?   @map("updated_by")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  createdByUser User?        @relation("CreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedByUser User?        @relation("UpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+  images       AnimalImage[]
+
+  @@map("animals")
+}
+
+model AnimalImage {
+  id          BigInt    @id @default(autoincrement())
+  animalId    BigInt    @map("animal_id")
+  imageUrl    String    @map("image_url")
+  storagePath String?   @map("storage_path")
+  mimeType    String?   @map("mime_type") @db.VarChar(80)
+  altText     String?   @map("alt_text") @db.VarChar(180)
+  isCover     Boolean   @default(false) @map("is_cover")
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  animal Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+
+  @@map("animal_images")
+}
+
+model News {
+  id          BigInt    @id @default(autoincrement())
+  title       String    @db.VarChar(180)
+  slug        String    @unique @map("slug") @db.VarChar(200)
+  category    String    @db.VarChar(30)
+  summary     String
+  content     String?
+  imageUrl    String?   @map("image_url")
+  eventDate   DateTime? @map("event_date") @db.Date
+  published   Boolean   @default(true)
+  publishedAt DateTime? @map("published_at")
+  createdBy   BigInt?   @map("created_by")
+  updatedBy   BigInt?   @map("updated_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  createdByUser User? @relation("NewsCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedByUser User? @relation("NewsUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  @@map("news")
+}

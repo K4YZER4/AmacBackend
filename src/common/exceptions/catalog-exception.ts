@@ -18,3 +18,14 @@ export class NotFoundAppException extends AppException {
     });
   }
 }
+export class BadRequestAppException extends AppException {
+  constructor({ code, message, details, requestId }: AppExceptionOptions) {
+    super({
+      statusCode: 400,
+      code,
+      message,
+      details,
+      requestId,
+    });
+  }
+}
