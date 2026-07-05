@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { CreateNewsDto } from './dto/create-news.dto.js';
 import { UpdateNewsDto } from './dto/update-news.dto.js';
+import { EXCEPTION_CODES } from '../../common/exceptions/exception-codes.exceptions.js';
+import { NotFoundAppException, BadRequestAppException } from '../../common/exceptions/catalog-exception.js';
 
 function slugify(text: string): string {
   return text
@@ -28,13 +31,22 @@ export class NewsService {
   }
 
   async findOne(id: bigint) {
-    return this.prisma.news.findFirst({
-      where: { id, deletedAt: null },
-    });
+    return await this.checkIfNewsExists(id);
   }
 
   async create(dto: CreateNewsDto) {
     const slug = dto.slug || slugify(dto.title);
+
+    const existingSlug = await this.prisma.news.findFirst({
+      where: { slug, deletedAt: null },
+    });
+    if (existingSlug) {
+      throw new BadRequestAppException({
+        code: EXCEPTION_CODES.RESOURCE_ALREADY_EXISTS,
+        message: `The slug "${slug}" is already in use.`,
+      });
+    }
+
     return this.prisma.news.create({
       data: {
         title: dto.title,
@@ -51,6 +63,8 @@ export class NewsService {
   }
 
   async update(id: bigint, dto: UpdateNewsDto) {
+    await this.checkIfNewsExists(id);
+
     const data: Record<string, unknown> = {};
     if (dto.title !== undefined) {
       data.title = dto.title;
@@ -60,6 +74,19 @@ export class NewsService {
     } else if (dto.slug !== undefined) {
       data.slug = dto.slug;
     }
+
+    if (data.slug !== undefined) {
+      const existingSlug = await this.prisma.news.findFirst({
+        where: { slug: data.slug as string, deletedAt: null, NOT: { id } },
+      });
+      if (existingSlug) {
+        throw new BadRequestAppException({
+          code: EXCEPTION_CODES.RESOURCE_ALREADY_EXISTS,
+          message: `The slug "${data.slug}" is already in use.`,
+        });
+      }
+    }
+
     if (dto.category !== undefined) data.category = dto.category;
     if (dto.summary !== undefined) data.summary = dto.summary;
     if (dto.content !== undefined) data.content = dto.content;
@@ -71,15 +98,29 @@ export class NewsService {
     }
 
     return this.prisma.news.update({
-      where: { id },
+      where: { id, deletedAt: null },
       data,
     });
   }
 
   async remove(id: bigint) {
+    await this.checkIfNewsExists(id);
     return this.prisma.news.update({
-      where: { id },
+      where: { id, deletedAt: null },
       data: { deletedAt: new Date() },
     });
+  }
+
+  private async checkIfNewsExists(id: bigint) {
+    const news = await this.prisma.news.findFirst({
+      where: { id, deletedAt: null },
+    });
+    if (!news) {
+      throw new NotFoundAppException({
+        code: EXCEPTION_CODES.RESOURCE_NOT_FOUND,
+        message: `News with id ${id} not found or has been deleted.`,
+      });
+    }
+    return news;
   }
 }

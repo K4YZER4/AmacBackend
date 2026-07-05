@@ -1,6 +1,6 @@
 import { AppException } from './app.exceptions.js';
 
-interface AppExceptionOptions {
+export interface AppExceptionOptions {
   code: string;
   message: string;
   details?: unknown;

@@ -1,14 +1,16 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { CreateAnimalDto } from './dto/create-animal.dto.js';
 import { UpdateAnimalDto } from './dto/update-animal.dto.js';
-
+import { EXCEPTION_CODES } from '../../common/exceptions/exception-codes.exceptions.js';
+import { NotFoundAppException } from '../../common/exceptions/catalog-exception.js';
 @Injectable()
 export class AdoptionService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(filters?: { species?: string; status?: string }) {
-    return this.prisma.animal.findMany({
+    const animals = await this.prisma.animal.findMany({
       where: {
         deletedAt: null,
         ...(filters?.species && { species: filters.species }),
@@ -17,13 +19,11 @@ export class AdoptionService {
       include: { images: true },
       orderBy: { createdAt: 'desc' },
     });
+    return animals;
   }
 
   async findOne(id: bigint) {
-    return this.prisma.animal.findFirst({
-      where: { id, deletedAt: null },
-      include: { images: true },
-    });
+    return await this.checkIfAnimalExists(id, { images: true });
   }
 
   async create(dto: CreateAnimalDto) {
@@ -50,8 +50,9 @@ export class AdoptionService {
   }
 
   async update(id: bigint, dto: UpdateAnimalDto) {
+    await this.checkIfAnimalExists(id);
     return this.prisma.animal.update({
-      where: { id },
+      where: { id, deletedAt: null },
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.species !== undefined && { species: dto.species }),
@@ -74,9 +75,23 @@ export class AdoptionService {
   }
 
   async remove(id: bigint) {
+    await this.checkIfAnimalExists(id);
     return this.prisma.animal.update({
-      where: { id },
+      where: { id, deletedAt: null },
       data: { deletedAt: new Date() },
     });
+  }
+  private async checkIfAnimalExists(id: bigint, include?: Prisma.AnimalInclude) {
+    const animal = await this.prisma.animal.findFirst({
+      where: { id, deletedAt: null },
+      include,
+    });
+    if (!animal) {
+      throw new NotFoundAppException({
+        code: EXCEPTION_CODES.RESOURCE_NOT_FOUND,
+        message: `Animal with id ${id} not found or has been deleted.`,
+      });
+    }
+    return animal;
   }
 }
