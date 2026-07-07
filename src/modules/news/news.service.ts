@@ -31,7 +31,16 @@ export class NewsService {
   }
 
   async findOne(id: bigint) {
-    return await this.checkIfNewsExists(id);
+    const news = await this.prisma.news.findFirst({
+      where: { id, deletedAt: null },
+    });
+    if (!news) {
+      throw new NotFoundAppException({
+        code: EXCEPTION_CODES.RESOURCE_NOT_FOUND,
+        message: `News with id ${id} not found or has been deleted.`,
+      });
+    }
+    return news;
   }
 
   async create(dto: CreateNewsDto) {
@@ -63,8 +72,6 @@ export class NewsService {
   }
 
   async update(id: bigint, dto: UpdateNewsDto) {
-    await this.checkIfNewsExists(id);
-
     const data: Record<string, unknown> = {};
     if (dto.title !== undefined) {
       data.title = dto.title;
@@ -97,30 +104,36 @@ export class NewsService {
       if (dto.published) data.publishedAt = new Date();
     }
 
-    return this.prisma.news.update({
-      where: { id, deletedAt: null },
-      data,
-    });
+    try {
+      return await this.prisma.news.update({
+        where: { id, deletedAt: null },
+        data,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundAppException({
+          code: EXCEPTION_CODES.RESOURCE_NOT_FOUND,
+          message: `News with id ${id} not found or has been deleted.`,
+        });
+      }
+      throw error;
+    }
   }
 
   async remove(id: bigint) {
-    await this.checkIfNewsExists(id);
-    return this.prisma.news.update({
-      where: { id, deletedAt: null },
-      data: { deletedAt: new Date() },
-    });
-  }
-
-  private async checkIfNewsExists(id: bigint) {
-    const news = await this.prisma.news.findFirst({
-      where: { id, deletedAt: null },
-    });
-    if (!news) {
-      throw new NotFoundAppException({
-        code: EXCEPTION_CODES.RESOURCE_NOT_FOUND,
-        message: `News with id ${id} not found or has been deleted.`,
+    try {
+      return await this.prisma.news.update({
+        where: { id, deletedAt: null },
+        data: { deletedAt: new Date() },
       });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundAppException({
+          code: EXCEPTION_CODES.RESOURCE_NOT_FOUND,
+          message: `News with id ${id} not found or has been deleted.`,
+        });
+      }
+      throw error;
     }
-    return news;
   }
 }
