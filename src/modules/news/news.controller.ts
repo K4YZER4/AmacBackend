@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestj
 import { NewsService } from './news.service.js';
 import { CreateNewsDto } from './dto/create-news.dto.js';
 import { UpdateNewsDto } from './dto/update-news.dto.js';
+import { Auth } from '../../common/decorators/auth.decorator.js';
 
 @Controller('news')
 export class NewsController {
@@ -18,16 +19,19 @@ export class NewsController {
   }
 
   @Post()
+  @Auth()
   create(@Body() dto: CreateNewsDto) {
     return this.newsService.create(dto);
   }
 
   @Patch(':id')
+  @Auth()
   update(@Param('id') id: string, @Body() dto: UpdateNewsDto) {
     return this.newsService.update(BigInt(id), dto);
   }
 
   @Delete(':id')
+  @Auth()
   remove(@Param('id') id: string) {
     return this.newsService.remove(BigInt(id));
   }

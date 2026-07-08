@@ -5,9 +5,10 @@ import { AppService } from './app.service.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { AdoptionModule } from './modules/adoption/adoption.module.js';
 import { NewsModule } from './modules/news/news.module.js';
+import { AuthModule } from './modules/auth/auth.module.js';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter.js';
 @Module({
-  imports: [PrismaModule, AdoptionModule, NewsModule],
+  imports: [PrismaModule, AdoptionModule, NewsModule, AuthModule],
   controllers: [AppController],
   providers: [
     AppService,

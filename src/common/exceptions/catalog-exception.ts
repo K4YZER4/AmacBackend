@@ -29,3 +29,14 @@ export class BadRequestAppException extends AppException {
     });
   }
 }
+export class UnauthorizedAppException extends AppException {
+  constructor({ code, message, details, requestId }: AppExceptionOptions) {
+    super({
+      statusCode: 401,
+      code,
+      message,
+      details,
+      requestId,
+    });
+  }
+}

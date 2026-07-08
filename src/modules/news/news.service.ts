@@ -4,7 +4,10 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 import { CreateNewsDto } from './dto/create-news.dto.js';
 import { UpdateNewsDto } from './dto/update-news.dto.js';
 import { EXCEPTION_CODES } from '../../common/exceptions/exception-codes.exceptions.js';
-import { NotFoundAppException, BadRequestAppException } from '../../common/exceptions/catalog-exception.js';
+import {
+  NotFoundAppException,
+  BadRequestAppException,
+} from '../../common/exceptions/catalog-exception.js';
 
 function slugify(text: string): string {
   return text
@@ -89,7 +92,7 @@ export class NewsService {
       if (existingSlug) {
         throw new BadRequestAppException({
           code: EXCEPTION_CODES.RESOURCE_ALREADY_EXISTS,
-          message: `The slug "${data.slug}" is already in use.`,
+          message: `The slug "${data.slug as string}" is already in use.`,
         });
       }
     }

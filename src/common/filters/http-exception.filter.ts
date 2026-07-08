@@ -22,7 +22,7 @@ export class HttpExceptionFilter implements ExceptionFilter<HttpException> {
             requestId,
           }
         : {
-            ...(exceptionResponse as object),
+            ...exceptionResponse,
             requestId,
           };
 

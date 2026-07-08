@@ -1,4 +1,12 @@
-import { IsBoolean, IsDateString, IsIn, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+} from 'class-validator';
 
 const categoryValues = ['donation', 'missing', 'event', 'raffle', 'announcement'] as const;
 
